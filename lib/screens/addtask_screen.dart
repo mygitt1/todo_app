@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddTask extends StatefulWidget {
@@ -10,67 +9,90 @@ class AddTask extends StatefulWidget {
 }
 
 class _AddTaskState extends State<AddTask> {
-  final titleController = TextEditingController();
-  final descriptionController = TextEditingController();
-
-  addTasToFirebase() async {
-    FirebaseAuth auth = FirebaseAuth.instance;
-    final User user = auth.currentUser;
-    String uid = user.uid;
-    var time = DateTime.now();
-    await FirebaseFirestore.instance
-        .collection('Todos')
-        .doc(uid)
-        .collection('mytodos')
-        .doc(time.toString())
-        .set({
-      'title': titleController.text,
-      'description': descriptionController.text,
-      'time': time.toString(),
-      'timestamp': time,
-    });
-    Fluttertoast.showToast(msg: 'Todo added');
-    // Navigator.pop(context);
-  }
+  String title;
+  String description;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add To-DO'),
+        centerTitle: true,
+        title: Text('Add Task'),
+        backgroundColor: Colors.brown.shade900,
       ),
       body: Container(
         padding: EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: [Colors.brown.shade900, Colors.brown.shade50],
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            TextField(
-              controller: titleController,
+            TextFormField(
               decoration: InputDecoration(
-                  labelText: 'Enter Title', border: OutlineInputBorder()),
+                filled: true,
+                fillColor: Colors.white,
+                hintText: 'Title',
+                labelStyle: GoogleFonts.roboto(color: Colors.black),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (val) {
+                title = val;
+              },
             ),
             SizedBox(
               height: 10,
             ),
-            TextField(
-              controller: descriptionController,
+            TextFormField(
               decoration: InputDecoration(
-                  labelText: 'Enter Description', border: OutlineInputBorder()),
+                filled: true,
+                fillColor: Colors.white,
+                hintText: 'Description',
+                labelStyle: TextStyle(color: Colors.black),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (val) {
+                description = val;
+              },
             ),
             TextButton(
-              onPressed: () {
-                addTasToFirebase();
-              },
+              style: TextButton.styleFrom(
+                primary: Colors.brown.shade900,
+              ),
+              onPressed: addTask,
               child: Text(
                 'Add Task',
                 style: GoogleFonts.roboto(
-                  fontSize: 18,
-                ),
+                    fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void addTask() async {
+    CollectionReference ref = FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser.uid)
+        .collection('task');
+
+    var data = {
+      'title': title,
+      'description': description,
+      'createdAt': DateTime.now(),
+    };
+    await ref.add(data);
+    Navigator.pop(context);
   }
 }

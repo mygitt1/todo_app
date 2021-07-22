@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:todo_app/screens/addtask_screen.dart';
@@ -13,20 +13,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String uid = '';
-  @override
-  void initState() {
-    getUid();
-    super.initState();
-  }
-
-  getUid() {
-    FirebaseAuth auth = FirebaseAuth.instance;
-    User user = auth.currentUser;
-    setState(() {
-      uid = user.uid;
-    });
-  }
+  CollectionReference ref = FirebaseFirestore.instance
+      .collection('users')
+      .doc(FirebaseAuth.instance.currentUser.uid)
+      .collection('task');
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +24,9 @@ class _HomeScreenState extends State<HomeScreen> {
     double width = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(
-        title: Text('To-do'),
+        backgroundColor: Colors.brown.shade900,
+        centerTitle: true,
+        title: Text('Task Screen'),
         actions: [
           IconButton(
               icon: Icon(Icons.logout),
@@ -43,92 +35,106 @@ class _HomeScreenState extends State<HomeScreen> {
               })
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        elevation: 6.0,
+        backgroundColor: Colors.brown.shade900,
+        onPressed: () {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (ctx) => AddTask(),
+              )).then((value) {
+            setState(() {});
+          });
+        },
+        child: Icon(
+          Icons.add,
+        ),
+      ),
       body: Container(
         height: height,
         width: width,
-        child: StreamBuilder(
-            stream: FirebaseFirestore.instance
-                .collection('Todos')
-                .doc(uid)
-                .collection('mytodos')
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+        child: FutureBuilder(
+          future: ref.get(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              if (snapshot.data.docs.length == 0) {
                 return Center(
-                  child: CircularProgressIndicator(),
+                  child: Text(
+                    'You Have no Task',
+                    style: GoogleFonts.roboto(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 );
-              } else {
-                final document = snapshot.data.docs;
-                return ListView.builder(
-                    itemCount: document.length,
-                    itemBuilder: (context, index) {
-                      var time =
-                          (document[index]['timestamp'] as Timestamp).toDate();
+              }
 
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DescriptionScreen(
-                                title: document[index]['title'],
-                                description: document[index]['description'],
-                              ),
+              return ListView.builder(
+                  itemCount: snapshot.data.docs.length,
+                  itemBuilder: (context, index) {
+                    Map data = snapshot.data.docs[index].data();
+                    DateTime date = data['createdAt'].toDate();
+                    String formatTime = DateFormat.yMd().add_jm().format(date);
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DescriptionScreen(
+                              data,
+                              formatTime,
+                              snapshot.data.docs[index].reference,
                             ),
-                          );
-                        },
-                        child: Container(
-                          height: 100,
+                          ),
+                        ).then((value) {
+                          setState(() {});
+                        });
+                      },
+                      child: Container(
+                          height: 120,
                           padding: EdgeInsets.all(10),
                           margin: EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                              color: Colors.lightBlueAccent,
+                              gradient: LinearGradient(
+                                  colors: [
+                                    Colors.brown.shade900,
+                                    Colors.brown.shade50
+                                  ],
+                                  begin: Alignment.centerRight,
+                                  end: Alignment.centerLeft),
                               borderRadius: BorderRadius.circular(10)),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(document[index]['title'],
-                                      style: GoogleFonts.roboto(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      )),
-                                  SizedBox(
-                                    height: 10,
-                                  ),
-                                  Text(DateFormat.yMd().add_jm().format(time)),
-                                  // Text(document[index]['description'])
-                                ],
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.delete),
-                                onPressed: () async {
-                                  await FirebaseFirestore.instance
-                                      .collection('Todos')
-                                      .doc(uid)
-                                      .collection('mytodos')
-                                      .doc(document[index]['time'])
-                                      .delete();
-
-                                  Fluttertoast.showToast(msg: 'Task Deleted');
-                                },
+                              Text('${data['title']}',
+                                  style: GoogleFonts.roboto(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  )),
+                              Text(formatTime),
+                              Text(
+                                '${data['description']}',
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.roboto(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
-                          ),
-                        ),
-                      );
-                    });
-              }
-            }),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          var route = MaterialPageRoute(builder: (ctx) => AddTask());
-          Navigator.push(context, route);
-        },
-        child: Icon(Icons.add),
+                          )),
+                    );
+                  });
+            } else {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+          },
+        ),
       ),
     );
   }

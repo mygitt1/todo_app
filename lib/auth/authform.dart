@@ -26,7 +26,7 @@ class _AuthFormState extends State<AuthForm> {
   submitForm(String email, String password, String username) async {
     final auth = FirebaseAuth.instance;
     try {
-      if (isLogin) {
+      if (!isLogin) {
         UserCredential credential = await auth.signInWithEmailAndPassword(
             email: email, password: password);
       } else {
@@ -54,6 +54,20 @@ class _AuthFormState extends State<AuthForm> {
         key: _formKey,
         child: Column(
           children: [
+            isLogin
+                ? Text(
+                    'Create a new account',
+                    style: GoogleFonts.roboto(
+                        fontSize: 35, fontWeight: FontWeight.bold),
+                  )
+                : Text(
+                    'Welcome Back !',
+                    style: GoogleFonts.roboto(
+                        fontSize: 35, fontWeight: FontWeight.bold),
+                  ),
+            SizedBox(
+              height: 10,
+            ),
             if (isLogin)
               TextFormField(
                 keyboardType: TextInputType.emailAddress,
@@ -63,8 +77,12 @@ class _AuthFormState extends State<AuthForm> {
                     borderRadius: BorderRadius.circular(20),
                     borderSide: BorderSide(),
                   ),
-                  labelText: 'Enter Username',
-                  labelStyle: GoogleFonts.roboto(),
+                  filled: true,
+                  fillColor: Colors.white,
+                  hintText: 'Enter Username',
+                  focusColor: Theme.of(context).accentColor,
+                  labelStyle:
+                      GoogleFonts.roboto(color: Theme.of(context).accentColor),
                 ),
                 validator: (value) {
                   if (value.isEmpty) {
@@ -87,7 +105,9 @@ class _AuthFormState extends State<AuthForm> {
                   borderRadius: BorderRadius.circular(20),
                   borderSide: BorderSide(),
                 ),
-                labelText: 'Enter Email',
+                filled: true,
+                fillColor: Colors.white,
+                hintText: 'Enter Email',
                 labelStyle: GoogleFonts.roboto(),
               ),
               validator: (value) {
@@ -112,7 +132,9 @@ class _AuthFormState extends State<AuthForm> {
                   borderRadius: BorderRadius.circular(20),
                   borderSide: BorderSide(),
                 ),
-                labelText: 'Enter Password',
+                filled: true,
+                fillColor: Colors.white,
+                hintText: 'Enter Password',
                 labelStyle: GoogleFonts.roboto(),
               ),
               validator: (value) {
@@ -128,9 +150,26 @@ class _AuthFormState extends State<AuthForm> {
             SizedBox(
               height: 10,
             ),
-            ElevatedButton(
-              onPressed: () => startAuthentication(),
-              child: isLogin ? Text('Login') : Text('SignUp'),
+            SizedBox(
+              height: 46,
+              width: 200,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    elevation: 6.0,
+                    primary: Colors.brown.shade900,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20))),
+                onPressed: () => startAuthentication(),
+                child: isLogin
+                    ? Text(
+                        'SignUp',
+                        style: GoogleFonts.roboto(fontSize: 20),
+                      )
+                    : Text(
+                        'Login',
+                        style: GoogleFonts.roboto(fontSize: 20),
+                      ),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -139,8 +178,20 @@ class _AuthFormState extends State<AuthForm> {
                 });
               },
               child: isLogin
-                  ? Text('Not a Member? Sign In')
-                  : Text('Already a User? Log In'),
+                  ? Text(
+                      'Already a User? Log In',
+                      style: GoogleFonts.roboto(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500),
+                    )
+                  : Text(
+                      'Not a Member? Sign In',
+                      style: GoogleFonts.roboto(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500),
+                    ),
             ),
           ],
         ),
